@@ -122,6 +122,21 @@ on:
         description: "自定义内核等级欺骗(SUBLEVEL)//Custom kernel SUBLEVEL spoofing"
         required: false
         default: ""
+      SRC_COMMON:
+        type: string
+        description: "pin android_kernel_common_oneplus_sm8750 to this commit (optional)"
+        required: false
+        default: ""
+      SRC_SOC:
+        type: string
+        description: "pin android_kernel_oneplus_sm8750 to this commit (optional)"
+        required: false
+        default: ""
+      SRC_MOD:
+        type: string
+        description: "pin modules_and_devicetree repo to this commit (optional)"
+        required: false
+        default: ""
       FAST_BUILD:
         type: boolean
         description: "是否启用极速构建？//Enable ultra-fast build?"
@@ -480,6 +495,15 @@ jobs:
           chmod a+x ~/repo
           sudo mv ~/repo /usr/local/bin/repo
 
+      - name: Pin source revisions (optional)
+        if: ${{ github.event.inputs.SRC_COMMON != '' || github.event.inputs.SRC_SOC != '' || github.event.inputs.SRC_MOD != '' }}
+        run: |
+          XML="$GITHUB_WORKSPACE/.repo/manifests_fallback/${FILE}.xml"
+          echo "pinning: common=${{ github.event.inputs.SRC_COMMON }} soc=${{ github.event.inputs.SRC_SOC }} mod=${{ github.event.inputs.SRC_MOD }}"
+          if [ -n "${{ github.event.inputs.SRC_COMMON }}" ]; then sed -i -E "/name=\"android_kernel_common_oneplus_sm8750\"/ s/revision=\"[^\"]*\"/revision=\"${{ github.event.inputs.SRC_COMMON }}\"/" "$XML"; fi
+          if [ -n "${{ github.event.inputs.SRC_SOC }}" ]; then sed -i -E "/name=\"android_kernel_oneplus_sm8750\"/ s/revision=\"[^\"]*\"/revision=\"${{ github.event.inputs.SRC_SOC }}\"/" "$XML"; fi
+          if [ -n "${{ github.event.inputs.SRC_MOD }}" ]; then sed -i -E "/name=\"android_kernel_modules_and_devicetree_oneplus_sm8750\"/ s/revision=\"[^\"]*\"/revision=\"${{ github.event.inputs.SRC_MOD }}\"/" "$XML"; fi
+          grep -E "common_oneplus_sm8750|oneplus_sm8750|modules_and_devicetree" "$XML" | sed "s/^/  /"
       - name: Initialize Repo and Sync
         env:
           FILE: ${{ github.event.inputs.FILE }}
