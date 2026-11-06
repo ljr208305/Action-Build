@@ -498,7 +498,7 @@ jobs:
       - name: Pin source revisions (optional)
         if: ${{ github.event.inputs.SRC_COMMON != '' || github.event.inputs.SRC_SOC != '' || github.event.inputs.SRC_MOD != '' }}
         run: |
-          XML="$GITHUB_WORKSPACE/.repo/manifests_fallback/${FILE}.xml"
+          XML="$GITHUB_WORKSPACE/.repo/manifests_fallback/${{ github.event.inputs.FILE }}.xml"
           echo "pinning: common=${{ github.event.inputs.SRC_COMMON }} soc=${{ github.event.inputs.SRC_SOC }} mod=${{ github.event.inputs.SRC_MOD }}"
           if [ -n "${{ github.event.inputs.SRC_COMMON }}" ]; then sed -i -E "/name=\"android_kernel_common_oneplus_sm8750\"/ s/revision=\"[^\"]*\"/revision=\"${{ github.event.inputs.SRC_COMMON }}\"/" "$XML"; fi
           if [ -n "${{ github.event.inputs.SRC_SOC }}" ]; then sed -i -E "/name=\"android_kernel_oneplus_sm8750\"/ s/revision=\"[^\"]*\"/revision=\"${{ github.event.inputs.SRC_SOC }}\"/" "$XML"; fi
