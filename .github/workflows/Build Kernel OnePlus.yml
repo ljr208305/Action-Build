@@ -792,8 +792,13 @@ jobs:
       - name: Apply Ace6 BakaSU SUSFS compat patches
         run: |
           cd kernel_workspace/kernel_platform/common
-          COMPAT="$GITHUB_WORKSPACE/kernel_workspace/Action-Build/patches/ace6/0001-ace6-bakasu-susfs-compat.patch"
-          echo "== applying $COMPAT"
+          BASE="$GITHUB_WORKSPACE/kernel_workspace/Action-Build/patches/ace6"
+          if [ "$KERNEL_VERSION" = "6.6" ]; then
+            COMPAT="$BASE/0001-ace6-bakasu-susfs-compat.patch"
+          else
+            COMPAT="$BASE/0001-ace6-bakasu-susfs-compat-6.12.patch"
+          fi
+          echo "== applying $COMPAT (kernel $KERNEL_VERSION)"
           patch -p1 --batch --forward < "$COMPAT"
           echo "== ace6 bakasu/susfs compat patch applied"
 
