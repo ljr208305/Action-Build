@@ -818,6 +818,19 @@ jobs:
             kotlin "$GITHUB_WORKSPACE/kernel_workspace/Action-Build/scripts/SusfsCompat.kts" revert "$PWD"
           fi
 
+      - name: Map SUSFS fake_state to real selinux_state (BakaSU has no fake_state)
+        run: |
+          cd kernel_workspace/kernel_platform/common
+          CHANGED=0
+          for f in security/selinux/*.c; do
+            if grep -q "extern struct selinux_state fake_state" "$f" 2>/dev/null; then
+              sed -i "/^extern struct selinux_state fake_state;/d" "$f"
+              sed -i "s/\\&fake_state/\\&selinux_state/g" "$f"
+              echo "patched fake_state -> selinux_state in $f"
+              CHANGED=1
+            fi
+          done
+          echo "fake_state remap applied: $CHANGED"
       - name: Apply Ace6 BakaSU SUSFS compat patches
         run: |
           cd kernel_workspace/kernel_platform/common
