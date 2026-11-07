@@ -1462,19 +1462,33 @@ jobs:
           fi
 
           make O=out "${MAKE_ARGS[@]}" olddefconfig --no-print-directory
-          make -j"$(nproc --all)" O=out "${MAKE_ARGS[@]}"
+          set +e
+          make -j"$(nproc --all)" O=out "${MAKE_ARGS[@]}" 2>&1 | tee /tmp/fastbuild.log
+          RC=${PIPESTATUS[0]}
+          set -e
+          if [ "$RC" -ne 0 ]; then
+            { echo "### FAST build failed (rc=$RC)"; echo '```'; tail -c 12000 /tmp/fastbuild.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            exit "$RC"
+          fi
           ccache -s
 
       - name: Fallback to Build Kernel
         if: ${{ github.event.inputs.FAST_BUILD == 'false' || steps.fast_build.outputs.fallback == 'true' }}
         run: |
           cd kernel_workspace
+          set +e
           if [ -f ./kernel_platform/build_with_bazel.py ]; then
-            ./kernel_platform/oplus/bazel/oplus_modules_variant.sh ${{ env.CPUD }} ${{ env.BUILD_METHOD }}
-            ./kernel_platform/build_with_bazel.py -t ${{ env.CPUD }} ${{ env.BUILD_METHOD }}
+            { ./kernel_platform/oplus/bazel/oplus_modules_variant.sh ${{ env.CPUD }} ${{ env.BUILD_METHOD }} && ./kernel_platform/build_with_bazel.py -t ${{ env.CPUD }} ${{ env.BUILD_METHOD }}; } 2>&1 | tee /tmp/fallbackbuild.log
+            RC=${PIPESTATUS[0]}
           else
             LTO=thin SYSTEM_DLKM_RE_SIGN=0 BUILD_SYSTEM_DLKM=0 KMI_SYMBOL_LIST_STRICT_MODE=0 \
-            ./kernel_platform/oplus/build/oplus_build_kernel.sh ${{ env.CPUD }} ${{ env.BUILD_METHOD }}
+            ./kernel_platform/oplus/build/oplus_build_kernel.sh ${{ env.CPUD }} ${{ env.BUILD_METHOD }} 2>&1 | tee /tmp/fallbackbuild.log
+            RC=${PIPESTATUS[0]}
+          fi
+          set -e
+          if [ "$RC" -ne 0 ]; then
+            { echo "### BAZEL build failed (rc=$RC)"; echo '```'; tail -c 12000 /tmp/fallbackbuild.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            exit "$RC"
           fi
 
       - name: Make AnyKernel3
