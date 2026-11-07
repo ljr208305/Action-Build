@@ -828,8 +828,12 @@ jobs:
             COMPAT="$BASE/0001-ace6-bakasu-susfs-compat-6.12.patch"
           fi
           echo "== applying $COMPAT (kernel $KERNEL_VERSION)"
-          patch -p1 --batch --forward < "$COMPAT"
-          echo "== ace6 bakasu/susfs compat patch applied"
+          if patch -p1 --batch --forward --dry-run < "$COMPAT" >/dev/null 2>&1; then
+            patch -p1 --batch --forward < "$COMPAT"
+            echo "== ace6 bakasu/susfs compat patch applied"
+          else
+            echo "::warning title=compat skipped::patch not applicable to this tree ($KERNEL_VERSION)"
+          fi
 
       - name: Disable module version CRC checks (source tree mismatch workaround)
         if: ${{ github.event.inputs.RESUBLEVEL != '' }}
